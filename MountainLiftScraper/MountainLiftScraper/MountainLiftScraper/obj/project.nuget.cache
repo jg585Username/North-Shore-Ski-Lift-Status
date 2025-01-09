@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "t6vczYbmSfU=",
+  "success": true,
+  "projectFilePath": "/Users/jonathanguan/Documents/GitHub/North-Shore-Ski-Lift-Status/MountainLiftScraper/MountainLiftScraper/MountainLiftScraper/MountainLiftScraper.csproj",
+  "expectedPackageFiles": [
+    "/Users/jonathanguan/.nuget/packages/htmlagilitypack/1.11.72/htmlagilitypack.1.11.72.nupkg.sha512"
+  ],
+  "logs": []
+}
