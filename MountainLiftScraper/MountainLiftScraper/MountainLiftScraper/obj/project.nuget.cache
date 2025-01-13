@@ -1,10 +1,16 @@
 {
   "version": 2,
-  "dgSpecHash": "t6vczYbmSfU=",
+  "dgSpecHash": "UbZYic/VzGM=",
   "success": true,
   "projectFilePath": "/Users/jonathanguan/Documents/GitHub/North-Shore-Ski-Lift-Status/MountainLiftScraper/MountainLiftScraper/MountainLiftScraper/MountainLiftScraper.csproj",
   "expectedPackageFiles": [
-    "/Users/jonathanguan/.nuget/packages/htmlagilitypack/1.11.72/htmlagilitypack.1.11.72.nupkg.sha512"
+    "/Users/jonathanguan/.nuget/packages/htmlagilitypack/1.11.72/htmlagilitypack.1.11.72.nupkg.sha512",
+    "/Users/jonathanguan/.nuget/packages/microsoft.bcl.asyncinterfaces/6.0.0/microsoft.bcl.asyncinterfaces.6.0.0.nupkg.sha512",
+    "/Users/jonathanguan/.nuget/packages/microsoft.playwright/1.50.0-beta-2/microsoft.playwright.1.50.0-beta-2.nupkg.sha512",
+    "/Users/jonathanguan/.nuget/packages/system.componentmodel.annotations/5.0.0/system.componentmodel.annotations.5.0.0.nupkg.sha512",
+    "/Users/jonathanguan/.nuget/packages/system.runtime.compilerservices.unsafe/6.0.0/system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
+    "/Users/jonathanguan/.nuget/packages/system.text.encodings.web/6.0.0/system.text.encodings.web.6.0.0.nupkg.sha512",
+    "/Users/jonathanguan/.nuget/packages/system.text.json/6.0.10/system.text.json.6.0.10.nupkg.sha512"
   ],
   "logs": []
 }

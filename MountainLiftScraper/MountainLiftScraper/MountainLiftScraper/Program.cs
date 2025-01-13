@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using Microsoft.Playwright;
+
 namespace MountainLiftScraper
 {
     class Program
@@ -20,6 +22,57 @@ namespace MountainLiftScraper
                 Console.WriteLine($"Lift: {lift.Name}, Status: {lift.Status}");
             }
         }
+         private static async Task ScrapeCypressAsync()
+        {
+            // If needed, install browsers the first time:
+            // await Playwright.InstallAsync();
+
+            // 1. Create a Playwright instance
+            using var playwright = await Playwright.CreateAsync();
+
+            // 2. Launch a headless Chromium browser
+            await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+            {
+                Headless = true // set false if you want to see the browser for debugging
+            });
+
+            // 3. Open a new tab
+            var page = await browser.NewPageAsync();
+
+            // 4. Navigate to Cypress Mountain's page
+            await page.GotoAsync("https://www.cypressmountain.com/mountain-report");
+
+            // 5. Wait for some selector that indicates lift data is loaded
+            //    NOTE: Adjust based on the real DOM. If there's a known container or element,
+            //    you might do something like:
+            await page.WaitForSelectorAsync("section[data-name='liftStatus']");
+
+            // 6A. Option 1: Directly query the final DOM using Playwright
+            var liftContainers = await page.QuerySelectorAllAsync("div[data-lift-row]"); 
+            // ^ Example selector. Adjust it to match the real DOM for lifts.
+
+            foreach (var container in liftContainers)
+            {
+                // e.g. name in a <span> or some child element
+                var liftNameEl = await container.QuerySelectorAsync(".lift-name");
+                var liftName = liftNameEl != null ? await liftNameEl.InnerTextAsync() : "Unknown";
+
+                // e.g. status from <img alt="Open" / "Closed">
+                var statusImg = await container.QuerySelectorAsync("img.lift-status");
+                var liftStatus = statusImg != null 
+                    ? await statusImg.GetAttributeAsync("alt") 
+                    : "Unknown";
+
+                Console.WriteLine($"Lift: {liftName}, Status: {liftStatus}");
+            }
+
+            // 6B. Option 2: Get the fully rendered HTML and parse with HtmlAgilityPack
+            // string renderedHtml = await page.ContentAsync();
+            // var doc = new HtmlAgilityPack.HtmlDocument();
+            // doc.LoadHtml(renderedHtml);
+            // ... parse with doc.DocumentNode.SelectNodes(...) ...
+        }
+    
 
         private static async Task<List<LiftStatus>> GetLiftStatuses(string url)
         {

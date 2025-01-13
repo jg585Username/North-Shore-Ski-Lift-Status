@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MountainLiftScraper")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9b6de0468bd6d7a0fd3b5af1e268b64a80cf5658")]
 [assembly: System.Reflection.AssemblyProductAttribute("MountainLiftScraper")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MountainLiftScraper")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
