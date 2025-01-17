@@ -8,115 +8,116 @@ using Microsoft.Playwright;
 
 namespace MountainLiftScraper
 {
+    // A simple model to hold each lift's data
     class Program
     {
         static async Task Main(string[] args)
         {
-            string url = "https://www.cypressmountain.com/mountain-report"; 
-            
-            var liftStatuses = await GetLiftStatuses(url);
+            string url = "https://www.cypressmountain.com/mountain-report";
 
+            // 1. Get the fully rendered HTML (via Playwright)
+            var renderedHtml = await GetRenderedHtmlAsync(url);
+            if (string.IsNullOrWhiteSpace(renderedHtml))
+            {
+                Console.WriteLine("Failed to retrieve rendered HTML.");
+                return;
+            }
+
+            // 2. Parse that HTML with HtmlAgilityPack
+            var liftStatuses = ParseLiftData(renderedHtml);
+
+            // 3. Print results
             Console.WriteLine($"Scraped from: {url}");
             foreach (var lift in liftStatuses)
             {
                 Console.WriteLine($"Lift: {lift.Name}, Status: {lift.Status}");
             }
         }
-         private static async Task ScrapeCypressAsync()
+
+        /// <summary>
+        /// Launches a headless browser, navigates to the page,
+        /// waits for the lift status section, then grabs the final HTML.
+        /// </summary>
+        private static async Task<string> GetRenderedHtmlAsync(string url)
         {
-            // If needed, install browsers the first time:
+            // If it's your first time using Playwright in this project:
             // await Playwright.InstallAsync();
 
-            // 1. Create a Playwright instance
-            using var playwright = await Playwright.CreateAsync();
-
-            // 2. Launch a headless Chromium browser
-            await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+            try
             {
-                Headless = true // set false if you want to see the browser for debugging
-            });
+                using var playwright = await Playwright.CreateAsync();
+                await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+                {
+                    Headless = true // set to false if you want to see the browser
+                });
+                var page = await browser.NewPageAsync();
 
-            // 3. Open a new tab
-            var page = await browser.NewPageAsync();
+                // Navigate to Cypress Mountain's page
+                await page.GotoAsync(url);
 
-            // 4. Navigate to Cypress Mountain's page
-            await page.GotoAsync("https://www.cypressmountain.com/mountain-report");
+                // Wait for the "liftStatus" section to appear
+                await page.WaitForSelectorAsync("section[data-name='liftStatus']");
 
-            // 5. Wait for some selector that indicates lift data is loaded
-            //    NOTE: Adjust based on the real DOM. If there's a known container or element,
-            //    you might do something like:
-            await page.WaitForSelectorAsync("section[data-name='liftStatus']");
-
-            // 6A. Option 1: Directly query the final DOM using Playwright
-            var liftContainers = await page.QuerySelectorAllAsync("div[data-lift-row]"); 
-            // ^ Example selector. Adjust it to match the real DOM for lifts.
-
-            foreach (var container in liftContainers)
-            {
-                // e.g. name in a <span> or some child element
-                var liftNameEl = await container.QuerySelectorAsync(".lift-name");
-                var liftName = liftNameEl != null ? await liftNameEl.InnerTextAsync() : "Unknown";
-
-                // e.g. status from <img alt="Open" / "Closed">
-                var statusImg = await container.QuerySelectorAsync("img.lift-status");
-                var liftStatus = statusImg != null 
-                    ? await statusImg.GetAttributeAsync("alt") 
-                    : "Unknown";
-
-                Console.WriteLine($"Lift: {liftName}, Status: {liftStatus}");
+                // At this point, the JS should have loaded the actual lift data
+                var renderedHtml = await page.ContentAsync();
+                return renderedHtml;
             }
-
-            // 6B. Option 2: Get the fully rendered HTML and parse with HtmlAgilityPack
-            // string renderedHtml = await page.ContentAsync();
-            // var doc = new HtmlAgilityPack.HtmlDocument();
-            // doc.LoadHtml(renderedHtml);
-            // ... parse with doc.DocumentNode.SelectNodes(...) ...
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error fetching rendered HTML: " + ex.Message);
+                return string.Empty;
+            }
         }
-    
 
-        private static async Task<List<LiftStatus>> GetLiftStatuses(string url)
+        /// <summary>
+        /// Parses the fully rendered HTML (from Playwright) using HtmlAgilityPack,
+        /// extracting each lift's name and status from the DOM.
+        /// </summary>
+        private static List<LiftStatus> ParseLiftData(string html)
         {
-            var httpClient = new HttpClient();
-            var htmlContent = await httpClient.GetStringAsync(url);
+            var results = new List<LiftStatus>();
 
-            // Load the HTML into an HtmlDocument
-            var htmlDoc = new HtmlDocument();
-            htmlDoc.LoadHtml(htmlContent);
+            // 1. Load HTML
+            var doc = new HtmlDocument();
+            doc.LoadHtml(html);
 
-            var result = new List<LiftStatus>();
-
-            // ---- EXAMPLE SELECTOR: Adjust this to match the actual HTML structure ----
-            // Let's assume each lift is in a <div class="lift-box">
-            var liftNodes = htmlDoc.DocumentNode.SelectNodes("//*[@id=\"lift-status\"]");
-           
-            if (liftNodes == null)
+            // 2. Find the "liftStatus" section
+            var liftSection = doc.DocumentNode.SelectSingleNode("//section[@data-name='liftStatus']");
+            if (liftSection == null)
             {
-                Console.WriteLine("No lift rows found. Page may be dynamic or structure may differ.");
-                return result;
+                Console.WriteLine("Could not find the liftStatus section in the HTML.");
+                return results;
             }
 
-            foreach (var node in liftNodes)
-            { 
-                // A) Lift name often appears in a <span> (like <span>Eagle Express</span>)
-                var nameNode = node.SelectSingleNode(".//div[contains(@class, 'col-span-1 flex flex-col gap-10 lg:col-span-7')]");
-                var liftName = nameNode?.InnerText?.Trim() ?? "Unknown Lift";
+            // 3. Identify each <li> that represents a single lift row
+            //    From your screenshot: <li class="flex items-center gap-1 border-t ... py-2">
+            //    We'll do partial matches on classes like 'flex' and 'items-center'.
+            var liNodes = liftSection.SelectNodes(".//li[contains(@class, 'flex') and contains(@class, 'items-center')]");
+            if (liNodes == null)
+            {
+                Console.WriteLine("No matching <li> elements found in liftStatus section.");
+                return results;
+            }
 
-                // B) The status is in the <img alt="Open/Closed">
-                //    e.g. <img alt="Closed">
-                var imgNode = node.SelectSingleNode(".//img[@alt='Open' or @alt='Closed']");
-                // If the <img> is found, get its "alt" attribute
-                var liftStatus = imgNode?.GetAttributeValue("alt", "Unknown") ?? "Unknown";
+            // 4. For each <li>, extract name and status
+            foreach (var li in liNodes)
+            {
+                // A) Lift name typically in a <p> or <span><p> structure
+                var nameNode = li.SelectSingleNode(".//p");
+                string liftName = nameNode?.InnerText?.Trim() ?? "Unknown Lift";
 
-                // Add to our results
-                result.Add(new LiftStatus
+                // B) Status from an <img alt="Open" or alt="Closed">
+                var imgNode = li.SelectSingleNode(".//img[@alt]");
+                string liftStatus = imgNode?.GetAttributeValue("alt", "Unknown") ?? "Unknown";
+
+                results.Add(new LiftStatus
                 {
                     Name = liftName,
                     Status = liftStatus
                 });
             }
-            
 
-            return result;
+            return results;
         }
     }
 }
