@@ -116,7 +116,7 @@ namespace MountainLiftScraper
                     Status = liftStatus
                 });
             }
-        //theres a better way to do this
+        //there's a better way to do this
             return results;
         }
     }
